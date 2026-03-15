@@ -1,0 +1,117 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocserv
+  namespace: default
+  labels:
+    app: ocserv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocserv
+  template:
+    metadata:
+      labels:
+        app: ocserv
+    spec:
+#      nodeSelector:
+#        kubernetes.io/hostname: kube1
+      containers:
+#        - name: ubuntu
+#          image: ubuntu:24.04
+#          command: ["/bin/bash"]
+#          args: ["-c", "sleep infinity"]
+#          securityContext:
+#            privileged: true
+#          volumeMounts:
+#          - name: shared-logs
+#            mountPath: /output
+
+        - name: fail2ban
+          image: crazymax/fail2ban:latest
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - name: shared-logs
+            mountPath: /output
+          - name: fail2ban-config
+            mountPath: /etc/fail2ban/filter.d/ocserv.conf
+            subPath: ocserv.conf
+          - name: fail2ban-config
+            mountPath: /etc/fail2ban/jail.d/ocserv.local
+            subPath: ocserv.local
+          env:
+          - name: IPTABLES_MODE
+            value: "legacy"
+
+        - name: ocserv
+          image: mrtzfrpr/ocserv:1.2.4
+          args:
+            - "/bin/sh"
+            - "-c"
+            - "ocserv -c /etc/ocserv/ocserv.conf -f --debug=1 2>&1 | tee /output/ocserv.log"
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 443
+              protocol: TCP
+            - containerPort: 443
+              protocol: UDP
+          volumeMounts:
+
+          - name: shared-logs
+            mountPath: /output
+
+          # TLS Secret
+          - name: tls-secret
+            mountPath: /etc/ocserv/certs
+            readOnly: true
+
+          # ocserv.conf
+          - name: ocserv-config
+            mountPath: /etc/ocserv/ocserv.conf
+            subPath: ocserv.conf
+            readOnly: true
+
+          # ocserv-mgmt
+          - name: ocserv-mgmt
+            mountPath: /etc/ocserv/ocserv-mgmt.sh
+            subPath: ocserv-mgmt.sh
+
+          # Persistent storage
+          - name: ocserv-storage
+            mountPath: /etc/ocserv
+
+      volumes:
+      # ocserv TLS Volume
+      - name: tls-secret
+        secret:
+          secretName: tunoo-de-tls
+
+      # ocserv ConfigMap ocserv-config
+      - name: ocserv-config
+        configMap:
+          name: ocserv-config
+
+      # ocserv ConfigMap ocserv-mgmt
+      - name: ocserv-mgmt
+        configMap:
+          name: ocserv-mgmt
+          defaultMode: 0755
+
+      # ocserv PVC
+      - name: ocserv-storage
+        persistentVolumeClaim:
+          claimName: ocserv-pvc
+
+      # fail2ban Shared volume
+      - name: shared-logs
+        emptyDir: {}
+
+      # fail2ban ConfigMap fail2ban-config
+      - name: fail2ban-config
+        configMap:
+          name: fail2ban-config
+---

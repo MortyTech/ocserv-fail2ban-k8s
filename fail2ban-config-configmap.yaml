@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fail2ban-config
+data:
+  ocserv.conf: |
+    [Definition]
+    failregex = ^ocserv\[\d+\]:\s+worker\[\S*\]:\s+<ADDR>\s+worker-auth\.c:\d+:\s+failed authentication.*
+    ignoreregex =
+
+  ocserv.local: |
+    [ocserv]
+    enabled   = true
+    port      = 443,1194
+    filter    = ocserv
+    logpath   = /output/ocserv.log
+    backend   = auto
+    maxretry  = 3
+    findtime  = 600
+    bantime   = 3600
+    banaction = iptables-multiport
+    protocol  = tcp
