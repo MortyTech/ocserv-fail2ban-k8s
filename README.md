@@ -3,6 +3,38 @@
 
 **2026 Mar UPDATE**: I added manage script as configmap in /etc/ocserv for manage user easily
 
+I build Docker file in my own dockerhub repo as name : mrtzfrpr/ocserv:1.2.4
+this is latest version of ocserv
+
+If you want to build for your own Dockerfile is exit in repo
+```bash
+docker build -t ocserv https://github.com/iw4p/OpenConnect-Cisco-AnyConnect-VPN-Server-OneKey-ocserv.git
+```
+
+Use ./ocserv-mgmt.sh inside ocserv container in ocserv pod to manage users and passwords:
+for example:
+```bash
+kubectl exec -it  ocserv-5f56bf4685-wtw8g  -c ocserv -- sh
+/etc/ocserv #
+/etc/ocserv # ./ocserv-mgmt.sh
+
+   ocserv User Management
+   ----------------------
+
+Choose an option:
+
+  1) Add User
+  2) Change Password
+  3) Show Users
+  4) Delete User
+  5) Lock User
+  6) Unlock User
+  7) Quit
+
+Enter choice [1-7]: 7
+Goodbye.
+```
+
 Use Valid real certificate file for smooth connection on client 
 dont forget or create certificate :
 ```bash
